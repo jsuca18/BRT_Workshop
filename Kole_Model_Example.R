@@ -2,7 +2,6 @@
 library(matrixStats)
 library(fmsb)
 
-
 source("BRT_Eval_Function_JJS.R")
 
 df<-readRDS("Kole_Dataset_Workshop.rds")
@@ -121,7 +120,7 @@ Variable_List<-Variable_List[order(-Variable_List$V1),]
 Num_Preds<-which(rownames(Variable_List) %in% Cont_Preds)
 
 dev.new()
-par(mfrow=c(5,3))
+par(mfrow=c(4,3))
 mn_part_plot<-list()  
 for(y in Num_Preds){
   id<-which(colnames(part_plot[[1]])==Variable_List$Variables[y])
@@ -209,11 +208,11 @@ percent_contrib<-NULL
 iters=length(Abund_Model)
 part_plot<-list()
 part_plot<-list()
-percent_contrib<-NULL#list()
+percent_contrib<-NULL
 Cont_Preds<-names(Filter(is.numeric,df_pres[,Reduced_Predictors]))
 Num_Preds<-which(var_tested %in% Cont_Preds)
 
-for(q in 1:iters){                                #this was 50 
+for(q in 1:iters){                               
   mod<-Abund_Model[q][[1]] 
   ###
   part_plot1<-data.frame(row.names=1:100)
@@ -249,13 +248,13 @@ Variable_List<-Variable_List[order(-Variable_List$V1),]
 Num_Preds<-which(rownames(Variable_List) %in% Cont_Preds)
 
 dev.new()
-par(mfrow=c(4,3))
+par(mfrow=c(5,3))
 mn_part_plot<-list()  
 for(y in Num_Preds){
   id<-which(colnames(part_plot[[1]])==Variable_List$Variables[y])
   all1<-NULL
   all2<-NULL
-  for(z in 1:iters){											 #this was 50 
+  for(z in 1:iters){											 
     all1<-rbind(all1, cbind(c(part_plot[[z]][,id])))
     all2<-rbind(all2, cbind(c(part_plot[[z]][,id+1])))
   }
@@ -279,12 +278,18 @@ Abund_Predictions<-matrix(, nrow=nrow(df), ncol=length(Abund_Model))
 
 for (k in 1:length(PA_Model)){
   PA_Predictions[,k]<-predict.gbm(PA_Model_Reduced[[1]][[k]], df, n.trees=PA_Model_Reduced[[1]][[k]]$n.trees, type="response")
-  Abund_Predictions<-predict.gbm(Abund_Model_Reduced[[1]][[k]], df, n.trees=Abund_Model_Reduced[[1]][[k]]$n.trees, type="response")
+  Abund_Predictions[,k]<-predict.gbm(Abund_Model_Reduced[[1]][[k]], df, n.trees=Abund_Model_Reduced[[1]][[k]]$n.trees, type="response")
   
   }                   
 PA_Estimates<-rowMeans(PA_Predictions,na.rm=T)
-Abund_Estimates<-rowMeans(PA_Predictions,na.rm=T)
+Abund_Estimates<-rowMeans(Abund_Predictions,na.rm=T)
 df<-cbind(df, PA_Estimates, Abund_Estimates)
-df$Hurdle_Estimate<-df$PA_Estimates*df$Abund_Estimates
+df$Hurdle_Estimate<-df$PA_Estimates*exp(df$Abund_Estimates)
 
-cor.test(df$CTST,exp(df$Hurdle_Estimate))
+cor.test(df$CTST,df$Hurdle_Estimate)
+cor(df$CTST,df$Hurdle_Estimate)^2
+plot(df$Hurdle_Estimate, df$CTST)
+plot(df$Hurdle_Estimate, df$CTST)
+plot(df$PA_Estimates, df$CTST)
+plot(df$Abund_Estimates, df$CTST)
+
